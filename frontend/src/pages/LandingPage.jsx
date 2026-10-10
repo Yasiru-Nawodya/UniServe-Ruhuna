@@ -1,4 +1,6 @@
 
+import { Link } from "react-router-dom";
+
 import {
   ArrowRight,
   ArrowUpRight,
@@ -81,9 +83,9 @@ function LandingPage() {
           </div>
 
           <div className="hidden items-center gap-3 md:flex">
-            <button className="rounded-lg px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
-              Sign In
-            </button>
+           <Link to="/login" className="rounded-lg px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
+             Sign In
+          </Link>
             <button className="rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-800">
               Get Started
             </button>
