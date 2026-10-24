@@ -86,9 +86,11 @@ function LandingPage() {
            <Link to="/login" className="rounded-lg px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">
              Sign In
           </Link>
-            <button className="rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-800">
-              Get Started
-            </button>
+            <Link
+                 to="/register"
+            className="rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-800">
+            Get Started
+           </Link>
           </div>
 
           <Menu className="md:hidden" />
@@ -264,7 +266,7 @@ function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-slate-200 py-8">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-6 text-sm text-slate-500 md:flex-row lg:px-10">
-          <p>© {new Date().getFullYear()} UniServe-Ruhuna. Student development project.</p>
+          <p>© {new Date().getFullYear()} UniServe Ruhuna. Student development project.</p>
           <p>Smart Campus Service Management Platform</p>
         </div>
       </footer>

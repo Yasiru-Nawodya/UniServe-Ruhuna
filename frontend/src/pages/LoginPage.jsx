@@ -1,4 +1,4 @@
-
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 function LoginPage() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     email: "",
@@ -27,11 +28,12 @@ function LoginPage() {
     }));
   }
 
-  function handleSubmit(event) {
-    event.preventDefault();
-    // Backend authentication will be integrated later.
-    console.log("Login form submitted");
-  }
+const handleSubmit = (event) => {
+  event.preventDefault();
+
+  // Temporary frontend-only navigation for testing.
+  navigate("/student/dashboard");
+};
 
   return (
     <div className="flex min-h-screen bg-white">
@@ -196,9 +198,9 @@ function LoginPage() {
 
           <p className="mt-9 text-center text-sm text-slate-500">
             Don't have an account?{" "}
-            <span className="font-semibold text-blue-700">
-              Create an account
-            </span>
+            <Link to="/register" className="font-semibold text-blue-700 hover:underline">
+                Create an account
+            </Link>
           </p>
         </div>
 
