@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
+import NewRequestPage from "./pages/NewRequestPage";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -33,7 +33,7 @@ function App() {
         <Route path="/student" element={<DashboardLayout />}>
           <Route path="dashboard" element={<StudentDashboard />} />
           <Route path="requests" element={<ComingSoon />} />
-          <Route path="requests/new" element={<ComingSoon />} />
+          <Route path="requests/new" element={<NewRequestPage />} />
           <Route path="notifications" element={<ComingSoon />} />
           <Route path="profile" element={<ComingSoon />} />
           <Route path="settings" element={<ComingSoon />} />
