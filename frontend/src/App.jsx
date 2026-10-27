@@ -6,6 +6,7 @@ import RegisterPage from "./pages/RegisterPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import MyRequestsPage from "./pages/MyRequestsPage";
+import RequestDetailsPage from "./pages/RequestDetailsPage";
 
 function ComingSoon() {
   return (
@@ -34,6 +35,7 @@ function App() {
         <Route path="/student" element={<DashboardLayout />}>
           <Route path="dashboard" element={<StudentDashboard />} />
           <Route path="requests" element={<MyRequestsPage />} />
+          <Route path="requests/:requestId" element={<RequestDetailsPage />} />
           <Route path="requests/new" element={<NewRequestPage />} />
           <Route path="notifications" element={<ComingSoon />} />
           <Route path="profile" element={<ComingSoon />} />
