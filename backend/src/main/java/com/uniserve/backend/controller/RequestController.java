@@ -1,6 +1,9 @@
 package com.uniserve.backend.controller;
 
-
+import com.uniserve.backend.dto.request.ReopenRequest;
+import com.uniserve.backend.entity.RequestAssignment;
+import com.uniserve.backend.repository.RequestAssignmentRepository;
+import com.uniserve.backend.entity.RequestStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import com.uniserve.backend.dto.request.CreateRequest;
 import com.uniserve.backend.dto.request.RequestHistoryResponse;
@@ -31,17 +34,20 @@ public class RequestController {
     private final ServiceCategoryService serviceCategoryService;
     private final RequestStatusHistoryService historyService;
     private final UserRepository userRepository;
+    private final RequestAssignmentRepository assignmentRepository;
 
-    public RequestController(
-            ServiceRequestService serviceRequestService,
-            ServiceCategoryService serviceCategoryService,
-            RequestStatusHistoryService historyService,
-            UserRepository userRepository) {
+   public RequestController(
+        ServiceRequestService serviceRequestService,
+        ServiceCategoryService serviceCategoryService,
+        RequestStatusHistoryService historyService,
+        UserRepository userRepository,
+        RequestAssignmentRepository assignmentRepository) {
 
         this.serviceRequestService = serviceRequestService;
         this.serviceCategoryService = serviceCategoryService;
         this.historyService = historyService;
         this.userRepository = userRepository;
+        this.assignmentRepository = assignmentRepository;
     }
 
     // =========================================================
@@ -167,12 +173,76 @@ public class RequestController {
                 );
     }
 
-    // =========================================================
-    // UPDATE REQUEST STATUS
-    // PATCH /api/requests/{id}/status
-    // =========================================================
 
-    
+// =========================================================
+// REOPEN REQUEST
+// POST /api/requests/{id}/reopen
+// =========================================================
+
+@PostMapping("/{id}/reopen")
+@PreAuthorize("hasAnyRole('STUDENT', 'LECTURER')")
+public ResponseEntity<RequestResponse> reopenRequest(
+        @PathVariable Long id,
+        @Valid @RequestBody ReopenRequest reopenRequest,
+        Authentication authentication) {
+
+    User currentUser = getAuthenticatedUser(authentication);
+
+    ServiceRequest request =
+            serviceRequestService
+                    .getRequestById(id)
+                    .orElseThrow(() ->
+                            new IllegalArgumentException(
+                                    "Service request not found."
+                            ));
+
+    // Only the original requester can reopen the request.
+    if (request.getSubmittedBy() == null
+            || !request.getSubmittedBy()
+                    .getId()
+                    .equals(currentUser.getId())) {
+
+        throw new IllegalStateException(
+                "You can only reopen your own requests."
+        );
+    }
+
+    // Reopening is allowed only after resolution or closure.
+    if (request.getStatus() != RequestStatus.RESOLVED
+            && request.getStatus() != RequestStatus.CLOSED) {
+
+        throw new IllegalStateException(
+                "Only resolved or closed requests can be reopened."
+        );
+    }
+
+    // Deactivate the latest active assignment, if one exists.
+    RequestAssignment latestAssignment =
+            assignmentRepository
+                    .findFirstByRequestOrderByAssignedAtDesc(request)
+                    .orElse(null);
+
+    if (latestAssignment != null
+            && latestAssignment.getUnassignedAt() == null) {
+
+        latestAssignment.setUnassignedAt(
+                java.time.LocalDateTime.now()
+        );
+
+        assignmentRepository.save(latestAssignment);
+    }
+
+    // Change status and create status history.
+    ServiceRequest reopenedRequest =
+            serviceRequestService.updateStatus(
+                    request.getId(),
+                    RequestStatus.REOPENED,
+                    currentUser,
+                    reopenRequest.getComment()
+            );
+
+    return ResponseEntity.ok(toResponse(reopenedRequest));
+}
 
     // =========================================================
     // GET AUTHENTICATED USER
@@ -266,6 +336,7 @@ public class RequestController {
         return response;
     }
 
+    
     // =========================================================
     // HISTORY → RESPONSE DTO
     // =========================================================
