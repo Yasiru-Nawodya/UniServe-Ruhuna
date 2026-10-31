@@ -1,5 +1,7 @@
 package com.uniserve.backend.controller;
 
+
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.uniserve.backend.dto.request.CreateRequest;
 import com.uniserve.backend.dto.request.RequestHistoryResponse;
 import com.uniserve.backend.dto.request.RequestResponse;
@@ -47,8 +49,9 @@ public class RequestController {
     // POST /api/requests
     // =========================================================
 
-    @PostMapping
-    public ResponseEntity<RequestResponse> createRequest(
+   @PostMapping
+   @PreAuthorize("hasAnyRole('STUDENT', 'LECTURER')")
+   public ResponseEntity<RequestResponse> createRequest(
             @Valid @RequestBody CreateRequest requestDto,
             Authentication authentication) {
 
@@ -87,7 +90,8 @@ public class RequestController {
     // =========================================================
 
     @GetMapping("/my")
-    public ResponseEntity<List<RequestResponse>> getMyRequests(
+   @PreAuthorize("hasAnyRole('STUDENT', 'LECTURER')")
+   public ResponseEntity<List<RequestResponse>> getMyRequests( 
             Authentication authentication) {
 
         User currentUser = getAuthenticatedUser(authentication);
@@ -108,7 +112,8 @@ public class RequestController {
     // =========================================================
 
     @GetMapping("/{id}")
-    public ResponseEntity<RequestResponse> getRequestById(
+   @PreAuthorize("hasAnyRole('STUDENT', 'LECTURER')")
+   public ResponseEntity<RequestResponse> getRequestById(
             @PathVariable Long id,
             Authentication authentication) {
 
@@ -133,7 +138,8 @@ public class RequestController {
     // =========================================================
 
     @GetMapping("/{id}/history")
-    public ResponseEntity<List<RequestHistoryResponse>> getRequestHistory(
+   @PreAuthorize("hasAnyRole('STUDENT', 'LECTURER')")
+   public ResponseEntity<List<RequestHistoryResponse>> getRequestHistory(
             @PathVariable Long id,
             Authentication authentication) {
 
@@ -166,42 +172,7 @@ public class RequestController {
     // PATCH /api/requests/{id}/status
     // =========================================================
 
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<RequestResponse> updateStatus(
-            @PathVariable Long id,
-            @Valid @RequestBody UpdateRequestStatus statusDto,
-            Authentication authentication) {
-
-        User currentUser = getAuthenticatedUser(authentication);
-
-        ServiceRequest request =
-                serviceRequestService
-                        .getRequestById(id)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "Service request not found."
-                                ));
-
-        // For now, only the request owner can update its status.
-        // Role-based permissions will be refined later when
-        // Service Staff and Admin controllers are implemented.
-        if (!request.getSubmittedBy()
-                .getId()
-                .equals(currentUser.getId())) {
-
-            return ResponseEntity.notFound().build();
-        }
-
-        ServiceRequest updatedRequest =
-                serviceRequestService.updateStatus(
-                        id,
-                        statusDto.getStatus(),
-                        currentUser,
-                        statusDto.getComment()
-                );
-
-        return ResponseEntity.ok(toResponse(updatedRequest));
-    }
+    
 
     // =========================================================
     // GET AUTHENTICATED USER
