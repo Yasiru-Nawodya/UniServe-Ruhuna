@@ -10,9 +10,15 @@ import java.util.Optional;
 public interface RequestAssignmentRepository
         extends JpaRepository<RequestAssignment, Long> {
 
-    List<RequestAssignment> findByRequestOrderByAssignedAtAsc(ServiceRequest request);
+    List<RequestAssignment> findByRequestOrderByAssignedAtAsc(
+            ServiceRequest request
+    );
 
     Optional<RequestAssignment> findFirstByRequestOrderByAssignedAtDesc(
             ServiceRequest request
+    );
+
+    List<RequestAssignment> findByAssignedToIdAndUnassignedAtIsNull(
+            Long userId
     );
 }
