@@ -1,5 +1,6 @@
 package com.uniserve.backend.controller;
 
+import com.uniserve.backend.service.NotificationService;
 import com.uniserve.backend.dto.request.AssignRequest;
 import com.uniserve.backend.dto.request.RequestHistoryResponse;
 import com.uniserve.backend.dto.request.RequestResponse;
@@ -33,19 +34,22 @@ public class AdminRequestController {
     private final RequestAssignmentService assignmentService;
     private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public AdminRequestController(
             ServiceRequestService serviceRequestService,
             RequestStatusHistoryService historyService,
             RequestAssignmentService assignmentService,
             DepartmentRepository departmentRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            NotificationService notificationService) {
 
         this.serviceRequestService = serviceRequestService;
         this.historyService = historyService;
         this.assignmentService = assignmentService;
         this.departmentRepository = departmentRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/pending")
@@ -157,6 +161,12 @@ public class AdminRequestController {
         department,
         currentUser,
         assignedTo
+);
+
+       notificationService.notifyAssignedStaff(
+        request,
+        assignedTo,
+        currentUser
 );
 
         ServiceRequest updatedRequest =

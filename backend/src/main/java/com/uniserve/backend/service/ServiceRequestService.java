@@ -19,14 +19,19 @@ public class ServiceRequestService {
 
     private final ServiceRequestRepository serviceRequestRepository;
     private final RequestStatusHistoryRepository historyRepository;
+    private final NotificationService notificationService;
 
-    public ServiceRequestService(
-            ServiceRequestRepository serviceRequestRepository,
-            RequestStatusHistoryRepository historyRepository) {
 
-        this.serviceRequestRepository = serviceRequestRepository;
-        this.historyRepository = historyRepository;
-    }
+
+  public ServiceRequestService(
+        ServiceRequestRepository serviceRequestRepository,
+        RequestStatusHistoryRepository historyRepository,
+        NotificationService notificationService) {
+
+    this.serviceRequestRepository = serviceRequestRepository;
+    this.historyRepository = historyRepository;
+    this.notificationService = notificationService;
+}
 
     // Get all service requests
     public List<ServiceRequest> getAllRequests() {
@@ -108,8 +113,52 @@ request.setStatus(RequestStatus.PENDING);
                 submittedBy
         );
 
+        notifyAdminsOfNewRequest(savedRequest, submittedBy);
+
         return savedRequest;
     }
+
+    private void notifyRequesterOfStatusChange(
+        ServiceRequest request,
+        RequestStatus newStatus) {
+
+    User requester = request.getSubmittedBy();
+
+    String message;
+
+    switch (newStatus) {
+        case IN_PROGRESS ->
+                message = "Your request "
+                        + request.getRequestNumber()
+                        + " is now in progress.";
+
+        case RESOLVED ->
+                message = "Your request "
+                        + request.getRequestNumber()
+                        + " has been resolved.";
+
+        case CLOSED ->
+                message = "Your request "
+                        + request.getRequestNumber()
+                        + " has been closed.";
+
+        default ->
+                message = "The status of your request "
+                        + request.getRequestNumber()
+                        + " has been changed to "
+                        + newStatus
+                        + ".";
+    }
+
+    notificationService.notifyRequester(
+            request,
+            requester,
+            message
+    );
+}
+
+
+
 
     // Create initial status history entry
     private void createInitialStatusHistory(
@@ -126,6 +175,20 @@ request.setStatus(RequestStatus.PENDING);
 
         historyRepository.save(history);
     }
+
+    private void notifyAdminsOfNewRequest(
+        ServiceRequest request,
+        User submittedBy) {
+
+    notificationService.notifyAdmins(
+            request,
+            "New service request "
+                    + request.getRequestNumber()
+                    + " submitted by "
+                    + submittedBy.getFullName()
+                    + "."
+    );
+}
 
     // Generate request number such as USR-0001
     private String generateRequestNumber() {
@@ -229,6 +292,12 @@ request.setStatus(RequestStatus.PENDING);
         history.setComment(comment);
 
         historyRepository.save(history);
+
+           // Notify the requester about the status change
+           notifyRequesterOfStatusChange(
+            updatedRequest,
+            newStatus
+    );
 
         return updatedRequest;
     }

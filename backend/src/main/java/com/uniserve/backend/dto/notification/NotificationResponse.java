@@ -6,6 +6,7 @@ public class NotificationResponse {
 
     private Long id;
     private Long requestId;
+    private String requestNumber;
     private String message;
     private boolean read;
     private LocalDateTime createdAt;
@@ -25,6 +26,14 @@ public class NotificationResponse {
 
     public void setRequestId(Long requestId) {
         this.requestId = requestId;
+    }
+
+    public String getRequestNumber() {
+        return requestNumber;
+    }
+
+    public void setRequestNumber(String requestNumber) {
+        this.requestNumber = requestNumber;
     }
 
     public String getMessage() {
