@@ -1,6 +1,6 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import api from "../services/api";
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,42 +14,89 @@ import {
 
 function LoginPage() {
   const navigate = useNavigate();
+
   const [showPassword, setShowPassword] = useState(false);
+
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
 
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
   function handleChange(event) {
     const { name, value } = event.target;
+
     setForm((previous) => ({
       ...previous,
       [name]: value,
     }));
   }
 
-const handleSubmit = (event) => {
-  event.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-  // Temporary frontend-only navigation for testing.
-  navigate("/student/dashboard");
-};
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await api.login(form);
+
+      localStorage.setItem("token", response.token);
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          userId: response.userId,
+          fullName: response.fullName,
+          email: response.email,
+          role: response.role,
+        }),
+      );
+
+      if (response.role === "ADMIN") {
+        navigate("/admin/dashboard");
+      } else if (response.role === "STUDENT") {
+        navigate("/student/dashboard");
+      } else {
+        setError(
+          "Your account role does not have a dashboard yet.",
+        );
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+
+      setError(
+        error.message ||
+          "Login failed. Please check your email and password.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-white">
       {/* Left branding panel */}
       <div className="relative hidden w-1/2 overflow-hidden bg-slate-950 p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <div className="absolute -right-32 top-20 h-96 w-96 rounded-full bg-blue-700/30 blur-3xl" />
+
         <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-cyan-600/20 blur-3xl" />
 
-        <Link to="/" className="relative z-10 flex items-center gap-3">
+        <Link
+          to="/"
+          className="relative z-10 flex items-center gap-3"
+        >
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600">
             <GraduationCap size={27} />
           </div>
+
           <div>
             <p className="text-2xl font-extrabold tracking-tight">
               UniServe<span className="text-blue-400">.</span>
             </p>
+
             <p className="text-xs tracking-wider text-slate-400">
               UNIVERSITY OF RUHUNA
             </p>
@@ -64,7 +111,10 @@ const handleSubmit = (event) => {
 
           <h1 className="text-5xl font-extrabold leading-tight tracking-tight">
             A smarter way to
-            <span className="text-blue-400"> care for our campus.</span>
+            <span className="text-blue-400">
+              {" "}
+              care for our campus.
+            </span>
           </h1>
 
           <p className="mt-7 max-w-md text-lg leading-8 text-slate-300">
@@ -75,12 +125,15 @@ const handleSubmit = (event) => {
           <div className="mt-12 grid grid-cols-2 gap-4">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
               <p className="font-semibold">Easy Reporting</p>
+
               <p className="mt-2 text-sm text-slate-400">
                 Submit campus requests in minutes.
               </p>
             </div>
+
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
               <p className="font-semibold">Live Tracking</p>
+
               <p className="mt-2 text-sm text-slate-400">
                 Follow the progress of your requests.
               </p>
@@ -114,12 +167,14 @@ const handleSubmit = (event) => {
             <h2 className="text-4xl font-extrabold tracking-tight text-slate-950">
               Welcome back
             </h2>
+
             <p className="mt-3 text-slate-500">
               Sign in to access your UniServe account.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email */}
             <div>
               <label
                 htmlFor="email"
@@ -127,11 +182,13 @@ const handleSubmit = (event) => {
               >
                 Email Address
               </label>
+
               <div className="relative">
                 <Mail
                   size={19}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                 />
+
                 <input
                   id="email"
                   name="email"
@@ -146,6 +203,7 @@ const handleSubmit = (event) => {
               </div>
             </div>
 
+            {/* Password */}
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <label
@@ -154,6 +212,7 @@ const handleSubmit = (event) => {
                 >
                   Password
                 </label>
+
                 <span className="text-sm font-semibold text-blue-700">
                   Forgot password?
                 </span>
@@ -164,6 +223,7 @@ const handleSubmit = (event) => {
                   size={19}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                 />
+
                 <input
                   id="password"
                   name="password"
@@ -178,28 +238,51 @@ const handleSubmit = (event) => {
 
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() =>
+                    setShowPassword(!showPassword)
+                  }
+                  aria-label={
+                    showPassword
+                      ? "Hide password"
+                      : "Show password"
+                  }
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
                 >
-                  {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                  {showPassword ? (
+                    <EyeOff size={19} />
+                  ) : (
+                    <Eye size={19} />
+                  )}
                 </button>
               </div>
             </div>
 
+            {/* Error */}
+            {error && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                {error}
+              </div>
+            )}
+
+            {/* Submit */}
             <button
               type="submit"
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 py-4 font-semibold text-white shadow-lg shadow-blue-700/15 transition hover:bg-blue-800"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 py-4 font-semibold text-white shadow-lg shadow-blue-700/15 transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Sign In
-              <ArrowRight size={19} />
+              {loading ? "Signing In..." : "Sign In"}
+
+              {!loading && <ArrowRight size={19} />}
             </button>
           </form>
 
           <p className="mt-9 text-center text-sm text-slate-500">
             Don't have an account?{" "}
-            <Link to="/register" className="font-semibold text-blue-700 hover:underline">
-                Create an account
+            <Link
+              to="/register"
+              className="font-semibold text-blue-700 hover:underline"
+            >
+              Create an account
             </Link>
           </p>
         </div>

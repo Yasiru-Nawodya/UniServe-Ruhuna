@@ -7,6 +7,8 @@ import StudentDashboard from "./pages/StudentDashboard";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import MyRequestsPage from "./pages/MyRequestsPage";
 import RequestDetailsPage from "./pages/RequestDetailsPage";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminRequestDetailsPage from "./pages/AdminRequestDetailsPage";
 
 function ComingSoon() {
   return (
@@ -28,19 +30,59 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
+
         <Route path="/login" element={<LoginPage />} />
+
         <Route path="/register" element={<RegisterPage />} />
 
         {/* Student routes */}
         <Route path="/student" element={<DashboardLayout />}>
-          <Route path="dashboard" element={<StudentDashboard />} />
-          <Route path="requests" element={<MyRequestsPage />} />
-          <Route path="requests/:requestId" element={<RequestDetailsPage />} />
-          <Route path="requests/new" element={<NewRequestPage />} />
-          <Route path="notifications" element={<ComingSoon />} />
-          <Route path="profile" element={<ComingSoon />} />
-          <Route path="settings" element={<ComingSoon />} />
+          <Route
+            path="dashboard"
+            element={<StudentDashboard />}
+          />
+
+          <Route
+            path="requests"
+            element={<MyRequestsPage />}
+          />
+
+          <Route
+            path="requests/:requestId"
+            element={<RequestDetailsPage />}
+          />
+
+          <Route
+            path="requests/new"
+            element={<NewRequestPage />}
+          />
+
+          <Route
+            path="notifications"
+            element={<ComingSoon />}
+          />
+
+          <Route
+            path="profile"
+            element={<ComingSoon />}
+          />
+
+          <Route
+            path="settings"
+            element={<ComingSoon />}
+          />
         </Route>
+
+        {/* Admin routes */}
+        <Route
+          path="/admin/dashboard"
+          element={<AdminDashboard />}
+        />
+
+        <Route
+          path="/admin/requests/:requestId"
+          element={<AdminRequestDetailsPage />}
+        />
       </Routes>
     </BrowserRouter>
   );

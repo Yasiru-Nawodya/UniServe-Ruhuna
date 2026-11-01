@@ -5,9 +5,12 @@ import com.uniserve.backend.dto.request.AssignRequest;
 import com.uniserve.backend.dto.request.RequestHistoryResponse;
 import com.uniserve.backend.dto.request.RequestResponse;
 import com.uniserve.backend.dto.request.UpdateRequestStatus;
+import com.uniserve.backend.dto.department.DepartmentResponse;
+import com.uniserve.backend.dto.user.UserResponse;
 import com.uniserve.backend.entity.Department;
 import com.uniserve.backend.entity.RequestStatus;
 import com.uniserve.backend.entity.RequestStatusHistory;
+import com.uniserve.backend.entity.Role;
 import com.uniserve.backend.entity.ServiceRequest;
 import com.uniserve.backend.entity.User;
 import com.uniserve.backend.repository.DepartmentRepository;
@@ -52,6 +55,21 @@ public class AdminRequestController {
         this.notificationService = notificationService;
     }
 
+
+
+    @GetMapping
+public ResponseEntity<List<RequestResponse>> getAllRequests() {
+
+    List<RequestResponse> requests =
+            serviceRequestService
+                    .getAllRequests()
+                    .stream()
+                    .map(this::toResponse)
+                    .toList();
+
+    return ResponseEntity.ok(requests);
+}
+
     @GetMapping("/pending")
     public ResponseEntity<List<RequestResponse>> getPendingRequests() {
 
@@ -64,6 +82,20 @@ public class AdminRequestController {
 
         return ResponseEntity.ok(requests);
     }
+
+    @GetMapping("/service-staff")
+    public ResponseEntity<List<UserResponse>> getServiceStaff() {
+
+        List<UserResponse> staff =
+                userRepository
+                        .findByRoleAndActiveTrue(Role.SERVICE_STAFF)
+                        .stream()
+                        .map(this::toUserResponse)
+                        .toList();
+
+        return ResponseEntity.ok(staff);
+    }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<RequestResponse> getRequest(
@@ -147,27 +179,44 @@ public class AdminRequestController {
         User assignedTo = null;
 
         if (assignDto.getAssignedToId() != null) {
+
             assignedTo =
                     userRepository
-                            .findById(assignDto.getAssignedToId())
+                            .findById(
+                                    assignDto.getAssignedToId()
+                            )
                             .orElseThrow(() ->
                                     new IllegalArgumentException(
                                             "Assigned staff member not found."
                                     ));
+
+            if (!assignedTo.isActive()) {
+                throw new IllegalArgumentException(
+                        "Assigned staff member is inactive."
+                );
+            }
+
+            if (assignedTo.getRole() != Role.SERVICE_STAFF) {
+                throw new IllegalArgumentException(
+                        "Selected user is not a service staff member."
+                );
+            }
         }
 
-       assignmentService.assignRequest(
-        request,
-        department,
-        currentUser,
-        assignedTo
-);
+        assignmentService.assignRequest(
+                request,
+                department,
+                currentUser,
+                assignedTo
+        );
 
-       notificationService.notifyAssignedStaff(
-        request,
-        assignedTo,
-        currentUser
-);
+        if (assignedTo != null) {
+            notificationService.notifyAssignedStaff(
+                    request,
+                    assignedTo,
+                    currentUser
+            );
+        }
 
         ServiceRequest updatedRequest =
                 serviceRequestService.updateStatus(
@@ -191,6 +240,20 @@ public class AdminRequestController {
                         new IllegalArgumentException(
                                 "Authenticated user not found."
                         ));
+    }
+
+    private UserResponse toUserResponse(User user) {
+
+        UserResponse response =
+                new UserResponse();
+
+        response.setId(user.getId());
+        response.setFullName(user.getFullName());
+        response.setEmail(user.getEmail());
+        response.setRole(user.getRole().name());
+        response.setActive(user.isActive());
+
+        return response;
     }
 
     private RequestResponse toResponse(

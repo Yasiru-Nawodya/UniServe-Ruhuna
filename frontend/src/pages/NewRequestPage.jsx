@@ -8,16 +8,41 @@ import {
   Send,
   Upload,
 } from "lucide-react";
+import api from "../services/api";
 
 const categories = [
-  "IT & Network",
-  "Electrical",
-  "Classroom Equipment",
-  "Building & Furniture",
-  "Cleaning & Sanitation",
-  "Water & Plumbing",
-  "Laboratory Equipment",
-  "Other",
+  {
+    id: 1,
+    name: "IT & Network",
+  },
+  {
+    id: 2,
+    name: "Electrical",
+  },
+  {
+    id: 3,
+    name: "Classroom Equipment",
+  },
+  {
+    id: 4,
+    name: "Building & Furniture",
+  },
+  {
+    id: 5,
+    name: "Cleaning & Sanitation",
+  },
+  {
+    id: 6,
+    name: "Water & Plumbing",
+  },
+  {
+    id: 7,
+    name: "Laboratory Equipment",
+  },
+  {
+    id: 8,
+    name: "Other",
+  },
 ];
 
 const urgencyLevels = [
@@ -41,6 +66,9 @@ const urgencyLevels = [
 function NewRequestPage() {
   const [submitted, setSubmitted] = useState(false);
 
+  const [submittedRequestNumber, setSubmittedRequestNumber] =
+    useState("");
+
   const [form, setForm] = useState({
     title: "",
     category: "",
@@ -50,6 +78,10 @@ function NewRequestPage() {
   });
 
   const [errors, setErrors] = useState({});
+
+  const [submitError, setSubmitError] = useState("");
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -63,6 +95,8 @@ function NewRequestPage() {
       ...current,
       [name]: "",
     }));
+
+    setSubmitError("");
   };
 
   const validate = () => {
@@ -90,7 +124,7 @@ function NewRequestPage() {
     return nextErrors;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const nextErrors = validate();
@@ -100,7 +134,45 @@ function NewRequestPage() {
       return;
     }
 
-    setSubmitted(true);
+    const selectedCategory = categories.find(
+      (category) => category.name === form.category,
+    );
+
+    if (!selectedCategory) {
+      setErrors({
+        category: "Please select a valid service category.",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError("");
+
+    try {
+      const requestData = {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        location: form.location.trim(),
+        priority: form.urgency,
+        categoryId: selectedCategory.id,
+      };
+
+      const createdRequest = await api.createRequest(requestData);
+
+      setSubmittedRequestNumber(
+        createdRequest.requestNumber ||
+          `USR-${String(createdRequest.id).padStart(4, "0")}`,
+      );
+
+      setSubmitted(true);
+    } catch (error) {
+      setSubmitError(
+        error.message ||
+          "Unable to submit the request. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -128,9 +200,10 @@ function NewRequestPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
               Request Reference
             </p>
+
             <p className="mt-2 text-lg font-bold text-slate-900">
-            USR-1001
-             </p>
+              {submittedRequestNumber}
+            </p>
           </div>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -181,6 +254,15 @@ function NewRequestPage() {
         </div>
       </div>
 
+      {/* Backend error */}
+      {submitError && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+          <p className="text-sm font-medium text-red-700">
+            {submitError}
+          </p>
+        </div>
+      )}
+
       {/* Form */}
       <form onSubmit={handleSubmit} noValidate className="space-y-6">
         {/* Basic information */}
@@ -194,6 +276,7 @@ function NewRequestPage() {
               <h2 className="text-lg font-bold text-slate-900">
                 Request Details
               </h2>
+
               <p className="mt-1 text-sm text-slate-500">
                 Tell us what needs attention.
               </p>
@@ -225,7 +308,9 @@ function NewRequestPage() {
               />
 
               {errors.title && (
-                <p className="mt-2 text-sm text-red-600">{errors.title}</p>
+                <p className="mt-2 text-sm text-red-600">
+                  {errors.title}
+                </p>
               )}
             </div>
 
@@ -253,8 +338,11 @@ function NewRequestPage() {
                   <option value="">Select a category</option>
 
                   {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
+                    <option
+                      key={category.id}
+                      value={category.name}
+                    >
+                      {category.name}
                     </option>
                   ))}
                 </select>
@@ -328,7 +416,9 @@ function NewRequestPage() {
 
               <div className="mt-2 flex justify-between gap-4">
                 {errors.description ? (
-                  <p className="text-sm text-red-600">{errors.description}</p>
+                  <p className="text-sm text-red-600">
+                    {errors.description}
+                  </p>
                 ) : (
                   <p className="text-xs text-slate-400">
                     Include useful information that can help the service team.
@@ -349,6 +439,7 @@ function NewRequestPage() {
             <h2 className="text-lg font-bold text-slate-900">
               Urgency & Impact
             </h2>
+
             <p className="mt-1 text-sm text-slate-500">
               Select the option that best describes the impact of this issue.
               Final priority can be reviewed by the administrator.
@@ -442,10 +533,14 @@ function NewRequestPage() {
 
           <button
             type="submit"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-6 py-3 font-semibold text-white transition hover:bg-blue-800"
+            disabled={isSubmitting}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-6 py-3 font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Send size={18} />
-            Submit Request
+
+            {isSubmitting
+              ? "Submitting..."
+              : "Submit Request"}
           </button>
         </div>
       </form>
