@@ -55,15 +55,15 @@ function LoginPage() {
         }),
       );
 
-      if (response.role === "ADMIN") {
-        navigate("/admin/dashboard");
-      } else if (response.role === "STUDENT") {
-        navigate("/student/dashboard");
-      } else {
-        setError(
-          "Your account role does not have a dashboard yet.",
-        );
-      }
+     if (response.role === "ADMIN") {
+  navigate("/admin/dashboard");
+} else if (response.role === "STUDENT") {
+  navigate("/student/dashboard");
+} else if (response.role === "SERVICE_STAFF") {
+  navigate("/staff/dashboard");
+} else {
+  setError("Your account role does not have a dashboard yet.");
+}
     } catch (error) {
       console.error("Login failed:", error);
 
@@ -253,7 +253,7 @@ function LoginPage() {
                   ) : (
                     <Eye size={19} />
                   )}
-                </button>
+             </button>
               </div>
             </div>
 

@@ -9,6 +9,9 @@ import MyRequestsPage from "./pages/MyRequestsPage";
 import RequestDetailsPage from "./pages/RequestDetailsPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminRequestDetailsPage from "./pages/AdminRequestDetailsPage";
+import ServiceStaffDashboard from "./pages/ServiceStaffDashboard";
+import ServiceStaffRequestDetailsPage from "./pages/ServiceStaffRequestDetailsPage";
+
 
 function ComingSoon() {
   return (
@@ -82,6 +85,17 @@ function App() {
         <Route
           path="/admin/requests/:requestId"
           element={<AdminRequestDetailsPage />}
+        />
+
+        {/* Service Staff routes */}
+        <Route
+          path="/service-staff/dashboard"
+          element={<ServiceStaffDashboard />}
+        />
+
+        <Route
+          path="/service-staff/requests/:requestId"
+          element={<ServiceStaffRequestDetailsPage />}
         />
       </Routes>
     </BrowserRouter>

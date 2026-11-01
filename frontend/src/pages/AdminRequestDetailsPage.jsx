@@ -22,6 +22,7 @@ function AdminRequestDetailsPage() {
   const [priority, setPriority] = useState("");
   const [departmentId, setDepartmentId] = useState("");
   const [assignedToId, setAssignedToId] = useState("");
+  const [closureComment, setClosureComment] = useState("");
 
   const [departments, setDepartments] = useState([]);
   const [serviceStaff, setServiceStaff] = useState([]);
@@ -29,6 +30,7 @@ function AdminRequestDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
   const [reviewing, setReviewing] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   const [error, setError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
@@ -262,6 +264,39 @@ function AdminRequestDetailsPage() {
     }
   };
 
+  const handleClose = async () => {
+    try {
+      setClosing(true);
+      setError("");
+      setActionMessage("");
+
+      await api.updateAdminRequestStatus(
+        requestId,
+        {
+          status: "CLOSED",
+          comment:
+            closureComment.trim() ||
+            "Request reviewed and closed by admin.",
+        },
+      );
+
+      await refreshRequestData();
+
+      setClosureComment("");
+
+      setActionMessage(
+        "Request closed successfully.",
+      );
+    } catch (err) {
+      setError(
+        err.message ||
+          "Failed to close the request.",
+      );
+    } finally {
+      setClosing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 p-6 lg:p-10">
@@ -312,6 +347,9 @@ function AdminRequestDetailsPage() {
 
   const isReviewed =
     request.status === "REVIEWED";
+
+  const isResolved =
+    request.status === "RESOLVED";
 
   const isAssignable =
     isReviewed;
@@ -608,8 +646,8 @@ function AdminRequestDetailsPage() {
                 </h2>
 
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Review, prioritize, and assign this
-                  service request.
+                  Review, prioritize, assign, and close
+                  this service request.
                 </p>
               </div>
 
@@ -787,7 +825,7 @@ function AdminRequestDetailsPage() {
                 </div>
               )}
 
-              {/* Already assigned */}
+              {/* Assigned */}
               {request.status ===
                 "ASSIGNED" && (
                 <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
@@ -803,6 +841,89 @@ function AdminRequestDetailsPage() {
                     This request has been assigned
                     and is ready for service staff
                     processing.
+                  </p>
+                </div>
+              )}
+
+              {/* Resolved / Close */}
+              {isResolved && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                  <div className="flex items-center gap-2 text-emerald-700">
+                    <CheckCircle2 size={18} />
+
+                    <p className="font-semibold">
+                      Request resolved
+                    </p>
+                  </div>
+
+                  <p className="mt-2 text-sm leading-6 text-emerald-700/80">
+                    The service staff member has
+                    marked this request as resolved.
+                    Review the resolution and close
+                    the request if the issue has been
+                    satisfactorily addressed.
+                  </p>
+
+                  <label
+                    htmlFor="closureComment"
+                    className="mb-2 mt-5 block text-sm font-semibold text-emerald-900"
+                  >
+                    Closure Note
+                  </label>
+
+                  <textarea
+                    id="closureComment"
+                    value={closureComment}
+                    onChange={(event) =>
+                      setClosureComment(
+                        event.target.value,
+                      )
+                    }
+                    rows={3}
+                    placeholder="Optional closure note..."
+                    className="w-full resize-none rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-600/10"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    disabled={closing}
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {closing ? (
+                      <>
+                        <Loader2
+                          size={17}
+                          className="animate-spin"
+                        />
+                        Closing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 size={17} />
+                        Close Request
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Closed */}
+              {request.status ===
+                "CLOSED" && (
+                <div className="rounded-xl border border-slate-200 bg-slate-100 p-4">
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <CheckCircle2 size={18} />
+
+                    <p className="font-semibold">
+                      Request closed
+                    </p>
+                  </div>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    This service request has completed
+                    the administrative workflow and is
+                    now closed.
                   </p>
                 </div>
               )}

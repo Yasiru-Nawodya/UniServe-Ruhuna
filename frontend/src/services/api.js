@@ -35,6 +35,21 @@ export const api = {
       body: JSON.stringify(credentials),
     }),
 
+      getStaffAssignedRequests: () =>
+    request("/staff/requests/assigned"),
+
+  getStaffRequest: (id) =>
+    request(`/staff/requests/${id}`),
+
+  getStaffRequestHistory: (id) =>
+    request(`/staff/requests/${id}/history`),
+
+  updateStaffRequestStatus: (id, data) =>
+    request(`/staff/requests/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
   getMyRequests: () => request("/requests/my"),
 
   getRequest: (id) => request(`/requests/${id}`),
