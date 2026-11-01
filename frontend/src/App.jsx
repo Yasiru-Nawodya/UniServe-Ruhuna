@@ -1,17 +1,22 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import NewRequestPage from "./pages/NewRequestPage";
+
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+
 import StudentDashboard from "./pages/StudentDashboard";
-import DashboardLayout from "./components/layout/DashboardLayout";
 import MyRequestsPage from "./pages/MyRequestsPage";
 import RequestDetailsPage from "./pages/RequestDetailsPage";
+import NewRequestPage from "./pages/NewRequestPage";
+import NotificationsPage from "./pages/NotificationsPage";
+
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminRequestDetailsPage from "./pages/AdminRequestDetailsPage";
+
 import ServiceStaffDashboard from "./pages/ServiceStaffDashboard";
 import ServiceStaffRequestDetailsPage from "./pages/ServiceStaffRequestDetailsPage";
 
+import DashboardLayout from "./components/layout/DashboardLayout";
 
 function ComingSoon() {
   return (
@@ -32,14 +37,26 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<LandingPage />} />
+        <Route
+          path="/"
+          element={<LandingPage />}
+        />
 
-        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/login"
+          element={<LoginPage />}
+        />
 
-        <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/register"
+          element={<RegisterPage />}
+        />
 
         {/* Student routes */}
-        <Route path="/student" element={<DashboardLayout />}>
+        <Route
+          path="/student"
+          element={<DashboardLayout />}
+        >
           <Route
             path="dashboard"
             element={<StudentDashboard />}
@@ -62,7 +79,7 @@ function App() {
 
           <Route
             path="notifications"
-            element={<ComingSoon />}
+            element={<NotificationsPage />}
           />
 
           <Route

@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Clock3,
   Loader2,
+  MapPin,
   PlayCircle,
   RefreshCw,
   User,
@@ -20,16 +21,16 @@ const statusLabels = {
 };
 
 const statusStyles = {
-  ASSIGNED: "bg-amber-100 text-amber-700",
-  IN_PROGRESS: "bg-blue-100 text-blue-700",
-  RESOLVED: "bg-emerald-100 text-emerald-700",
+  ASSIGNED: "border-amber-200 bg-amber-50 text-amber-700",
+  IN_PROGRESS: "border-indigo-200 bg-indigo-50 text-indigo-700",
+  RESOLVED: "border-emerald-200 bg-emerald-50 text-emerald-700",
 };
 
 const priorityStyles = {
-  LOW: "bg-slate-100 text-slate-700",
-  MEDIUM: "bg-blue-100 text-blue-700",
-  HIGH: "bg-orange-100 text-orange-700",
-  CRITICAL: "bg-red-100 text-red-700",
+  LOW: "border-slate-200 bg-slate-50 text-slate-600",
+  MEDIUM: "border-blue-200 bg-blue-50 text-blue-700",
+  HIGH: "border-orange-200 bg-orange-50 text-orange-700",
+  CRITICAL: "border-red-200 bg-red-50 text-red-700",
 };
 
 function formatDate(dateValue) {
@@ -37,7 +38,66 @@ function formatDate(dateValue) {
     return "—";
   }
 
-  return new Date(dateValue).toLocaleString();
+  return new Date(dateValue).toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function DetailItem({ label, value, icon: Icon }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+        {Icon && <Icon size={14} />}
+        {label}
+      </div>
+
+      <p className="mt-2 text-sm font-semibold leading-5 text-slate-800">
+        {value || "Not specified"}
+      </p>
+    </div>
+  );
+}
+
+function TimelineItem({ item, isLast }) {
+  return (
+    <div className="relative flex gap-4">
+      {!isLast && (
+        <div className="absolute left-[7px] top-4 h-full w-px bg-slate-200" />
+      )}
+
+      <div className="relative z-10 mt-1 h-4 w-4 shrink-0 rounded-full border-4 border-white bg-indigo-500 shadow-sm ring-1 ring-indigo-100" />
+
+      <div className="min-w-0 flex-1 pb-6">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div>
+            <p className="text-sm font-extrabold text-slate-900">
+              {statusLabels[item.status] || item.status}
+            </p>
+
+            <p className="mt-1 text-xs font-medium text-slate-500">
+              {item.changedByName || "System"}
+            </p>
+          </div>
+
+          <p className="shrink-0 text-xs font-medium text-slate-400">
+            {formatDate(item.createdAt)}
+          </p>
+        </div>
+
+        {item.comment && (
+          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-sm leading-6 text-slate-600">
+              {item.comment}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function ServiceStaffRequestDetailsPage() {
@@ -115,9 +175,21 @@ export default function ServiceStaffRequestDetailsPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="flex items-center gap-3 text-sm text-slate-500">
-          <RefreshCw className="h-5 w-5 animate-spin" />
-          Loading request...
+        <div className="flex flex-col items-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+            <RefreshCw
+              size={21}
+              className="animate-spin"
+            />
+          </div>
+
+          <p className="mt-4 text-sm font-semibold text-slate-700">
+            Loading request...
+          </p>
+
+          <p className="mt-1 text-xs text-slate-400">
+            Fetching request details and history
+          </p>
         </div>
       </div>
     );
@@ -125,28 +197,32 @@ export default function ServiceStaffRequestDetailsPage() {
 
   if (!request) {
     return (
-      <div className="min-h-screen bg-slate-50 px-4 py-10">
+      <div className="min-h-screen bg-slate-50 px-5 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl">
           <Link
             to="/staff/dashboard"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-violet-700"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft size={17} />
             Back to Dashboard
           </Link>
 
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-6 text-red-700">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 shrink-0" />
+          <div className="mt-6 overflow-hidden rounded-2xl border border-red-200 bg-white shadow-sm">
+            <div className="border-b border-red-100 bg-red-50 p-6">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600">
+                  <AlertCircle size={21} />
+                </div>
 
-              <div>
-                <p className="font-semibold">
-                  Request could not be loaded
-                </p>
+                <div>
+                  <h1 className="font-extrabold text-red-900">
+                    Request could not be loaded
+                  </h1>
 
-                <p className="mt-1 text-sm">
-                  {error || "Request not found."}
-                </p>
+                  <p className="mt-1 text-sm leading-6 text-red-700">
+                    {error || "Request not found."}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -157,48 +233,52 @@ export default function ServiceStaffRequestDetailsPage() {
 
   const canStartWork = request.status === "ASSIGNED";
   const canResolve = request.status === "IN_PROGRESS";
+  const isResolved = request.status === "RESOLVED";
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-5 py-7 sm:px-6 lg:px-8 lg:py-9">
+        {/* Back navigation */}
         <Link
           to="/staff/dashboard"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-slate-900"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-violet-700"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft size={17} />
           Back to Dashboard
         </Link>
 
+        {/* Header */}
         <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 p-6 sm:p-8">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div>
+          <div className="border-b border-slate-200 p-5 sm:p-7 lg:p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-bold text-blue-600">
+                  <span className="rounded-lg bg-violet-50 px-2.5 py-1.5 text-xs font-extrabold tracking-wide text-violet-700">
                     {request.requestNumber}
                   </span>
 
                   <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-extrabold ${
                       statusStyles[request.status] ||
-                      "bg-slate-100 text-slate-700"
+                      "border-slate-200 bg-slate-50 text-slate-600"
                     }`}
                   >
+                    <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
                     {statusLabels[request.status] ||
                       request.status}
                   </span>
 
                   <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    className={`rounded-full border px-2.5 py-1 text-[11px] font-extrabold ${
                       priorityStyles[request.priority] ||
-                      "bg-slate-100 text-slate-700"
+                      "border-slate-200 bg-slate-50 text-slate-600"
                     }`}
                   >
-                    {request.priority}
+                    {request.priority || "No Priority"}
                   </span>
                 </div>
 
-                <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                <h1 className="mt-4 max-w-3xl text-2xl font-extrabold tracking-tight text-slate-950 sm:text-3xl">
                   {request.title}
                 </h1>
 
@@ -207,242 +287,373 @@ export default function ServiceStaffRequestDetailsPage() {
                 </p>
               </div>
 
-              <div className="rounded-xl bg-slate-50 p-4 lg:min-w-56">
-                <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                  <User className="h-4 w-4" />
+              {/* Requester */}
+              <div className="shrink-0 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:min-w-64">
+                <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                  <User size={15} />
                   Submitted By
                 </div>
 
-                <p className="mt-2 text-sm text-slate-900">
+                <p className="mt-2 text-sm font-bold text-slate-900">
                   {request.submittedByName || "Unknown"}
                 </p>
               </div>
             </div>
           </div>
 
+          {/* Error */}
           {error && (
-            <div className="mx-6 mt-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 sm:mx-8">
-              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+            <div className="mx-5 mt-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 sm:mx-7 lg:mx-8">
+              <AlertCircle
+                size={19}
+                className="mt-0.5 shrink-0"
+              />
 
               <div>
-                <p className="font-semibold">
+                <p className="font-bold">
                   Operation failed
                 </p>
 
-                <p className="mt-1">{error}</p>
+                <p className="mt-1 leading-6">
+                  {error}
+                </p>
               </div>
             </div>
           )}
 
-          <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1.5fr_1fr]">
-            <div>
-              <div className="flex items-center gap-2">
-                <Wrench className="h-5 w-5 text-slate-700" />
-
-                <h2 className="text-lg font-bold text-slate-900">
-                  Request Details
-                </h2>
-              </div>
-
-              <div className="mt-5 space-y-5">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    Description
-                  </p>
-
-                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                    {request.description ||
-                      "No description provided."}
-                  </p>
-                </div>
-
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      Location
-                    </p>
-
-                    <p className="mt-2 text-sm text-slate-700">
-                      {request.location || "Not specified"}
-                    </p>
+          {/* Main content */}
+          <div className="grid gap-8 p-5 sm:p-7 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.75fr)] lg:p-8">
+            {/* Left column */}
+            <div className="min-w-0">
+              {/* Request details */}
+              <section>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-700">
+                    <Wrench size={18} />
                   </div>
 
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      Category
-                    </p>
+                    <h2 className="text-lg font-extrabold text-slate-950">
+                      Request Details
+                    </h2>
 
-                    <p className="mt-2 text-sm text-slate-700">
-                      {request.categoryName || "Not specified"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      Department
-                    </p>
-
-                    <p className="mt-2 text-sm text-slate-700">
-                      {request.assignedDepartmentName ||
-                        "Not assigned"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      Last Updated
-                    </p>
-
-                    <p className="mt-2 text-sm text-slate-700">
-                      {formatDate(request.updatedAt)}
+                    <p className="text-xs text-slate-400">
+                      Information provided with this service request
                     </p>
                   </div>
                 </div>
-              </div>
-
-              <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <div className="flex items-center gap-2">
-                  <Clock3 className="h-5 w-5 text-slate-700" />
-
-                  <h2 className="text-lg font-bold text-slate-900">
-                    Request History
-                  </h2>
-                </div>
-
-                {history.length === 0 ? (
-                  <p className="mt-4 text-sm text-slate-500">
-                    No history available.
-                  </p>
-                ) : (
-                  <div className="mt-5 space-y-4">
-                    {history.map((item, index) => (
-                      <div
-                        key={`${item.createdAt}-${index}`}
-                        className="relative pl-7"
-                      >
-                        <div className="absolute left-0 top-1.5 h-3 w-3 rounded-full bg-blue-500 ring-4 ring-blue-100" />
-
-                        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                          <div>
-                            <p className="text-sm font-semibold text-slate-900">
-                              {statusLabels[item.status] ||
-                                item.status}
-                            </p>
-
-                            <p className="mt-1 text-xs text-slate-500">
-                              {item.changedByName || "System"}
-                            </p>
-
-                            {item.comment && (
-                              <p className="mt-2 text-sm text-slate-600">
-                                {item.comment}
-                              </p>
-                            )}
-                          </div>
-
-                          <p className="text-xs text-slate-400">
-                            {formatDate(item.createdAt)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h2 className="text-lg font-bold text-slate-900">
-                  Work Actions
-                </h2>
-
-                <p className="mt-1 text-sm text-slate-500">
-                  Update the request as you work on it.
-                </p>
 
                 <div className="mt-5">
-                  <label
-                    htmlFor="work-comment"
-                    className="text-sm font-semibold text-slate-700"
-                  >
-                    Work Note
-                  </label>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                      Description
+                    </p>
 
-                  <textarea
-                    id="work-comment"
-                    value={comment}
-                    onChange={(event) =>
-                      setComment(event.target.value)
-                    }
-                    rows={5}
-                    placeholder="Add a note about the work performed..."
-                    disabled={
-                      updating ||
-                      request.status === "RESOLVED"
-                    }
-                    className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  />
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-700">
+                      {request.description ||
+                        "No description provided."}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="mt-5 space-y-3">
-                  {canStartWork && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        updateStatus("IN_PROGRESS")
-                      }
-                      disabled={updating}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {updating ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <PlayCircle className="h-4 w-4" />
-                      )}
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <DetailItem
+                    label="Location"
+                    value={request.location}
+                    icon={MapPin}
+                  />
 
-                      Start Work
-                    </button>
-                  )}
+                  <DetailItem
+                    label="Category"
+                    value={request.categoryName}
+                  />
 
-                  {canResolve && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        updateStatus("RESOLVED")
-                      }
-                      disabled={updating}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {updating ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="h-4 w-4" />
-                      )}
+                  <DetailItem
+                    label="Department"
+                    value={
+                      request.assignedDepartmentName
+                    }
+                  />
 
-                      Mark as Resolved
-                    </button>
-                  )}
+                  <DetailItem
+                    label="Last Updated"
+                    value={formatDate(
+                      request.updatedAt,
+                    )}
+                    icon={Clock3}
+                  />
+                </div>
+              </section>
 
-                  {request.status === "RESOLVED" && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                      <div className="flex items-start gap-3">
-                        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+              {/* History */}
+              <section className="mt-8 rounded-2xl border border-slate-200 bg-white">
+                <div className="border-b border-slate-200 p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                      <Clock3 size={18} />
+                    </div>
 
-                        <div>
-                          <p className="text-sm font-semibold text-emerald-800">
-                            Request resolved
-                          </p>
+                    <div>
+                      <h2 className="text-lg font-extrabold text-slate-950">
+                        Request History
+                      </h2>
 
-                          <p className="mt-1 text-xs leading-5 text-emerald-700">
-                            The request has been marked as
-                            resolved. An administrator can now
-                            review and close the request.
-                          </p>
-                        </div>
-                      </div>
+                      <p className="text-xs text-slate-400">
+                        Timeline of actions taken on this request
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-5">
+                  {history.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+                      <p className="text-sm font-semibold text-slate-500">
+                        No history available.
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      {history.map((item, index) => (
+                        <TimelineItem
+                          key={`${item.createdAt}-${index}`}
+                          item={item}
+                          isLast={
+                            index === history.length - 1
+                          }
+                        />
+                      ))}
                     </div>
                   )}
+                </div>
+              </section>
+            </div>
+
+            {/* Right column */}
+            <div>
+              <div className="lg:sticky lg:top-6">
+                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="border-b border-slate-200 bg-slate-50/70 p-5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-700">
+                        <Wrench size={18} />
+                      </div>
+
+                      <div>
+                        <h2 className="text-lg font-extrabold text-slate-950">
+                          Work Actions
+                        </h2>
+
+                        <p className="text-xs text-slate-400">
+                          Update the request as you work
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-5">
+                    {/* Current status */}
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                        Current Status
+                      </p>
+
+                      <div className="mt-2 flex items-center gap-2">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-extrabold ${
+                            statusStyles[request.status] ||
+                            "border-slate-200 bg-white text-slate-600"
+                          }`}
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                          {statusLabels[request.status] ||
+                            request.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Work note */}
+                    {!isResolved && (
+                      <div className="mt-5">
+                        <label
+                          htmlFor="work-comment"
+                          className="text-sm font-bold text-slate-700"
+                        >
+                          Work Note
+                        </label>
+
+                        <p className="mt-1 text-xs leading-5 text-slate-400">
+                          Add details about the work performed or
+                          the action you are taking.
+                        </p>
+
+                        <textarea
+                          id="work-comment"
+                          value={comment}
+                          onChange={(event) =>
+                            setComment(event.target.value)
+                          }
+                          rows={6}
+                          placeholder="e.g. Inspected the equipment and identified the faulty connection..."
+                          disabled={updating}
+                          className="mt-3 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        />
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="mt-5 space-y-3">
+                      {canStartWork && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateStatus("IN_PROGRESS")
+                            }
+                            disabled={updating}
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-violet-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {updating ? (
+                              <Loader2
+                                size={18}
+                                className="animate-spin"
+                              />
+                            ) : (
+                              <PlayCircle size={18} />
+                            )}
+
+                            {updating
+                              ? "Starting Work..."
+                              : "Start Work"}
+                          </button>
+
+                          <p className="text-center text-[11px] leading-5 text-slate-400">
+                            Starting work will move this request to
+                            <span className="font-bold text-slate-600">
+                              {" "}
+                              In Progress
+                            </span>
+                            .
+                          </p>
+                        </>
+                      )}
+
+                      {canResolve && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateStatus("RESOLVED")
+                            }
+                            disabled={updating}
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-emerald-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {updating ? (
+                              <Loader2
+                                size={18}
+                                className="animate-spin"
+                              />
+                            ) : (
+                              <CheckCircle2 size={18} />
+                            )}
+
+                            {updating
+                              ? "Resolving Request..."
+                              : "Mark as Resolved"}
+                          </button>
+
+                          <p className="text-center text-[11px] leading-5 text-slate-400">
+                            Add a work note above before resolving
+                            if you want the action recorded in the
+                            request history.
+                          </p>
+                        </>
+                      )}
+
+                      {isResolved && (
+                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+                              <CheckCircle2 size={19} />
+                            </div>
+
+                            <div>
+                              <p className="text-sm font-extrabold text-emerald-800">
+                                Request resolved
+                              </p>
+
+                              <p className="mt-1 text-xs leading-5 text-emerald-700">
+                                The work has been completed and the
+                                request is now waiting for
+                                administrative review and closure.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </section>
+
+                {/* Workflow guide */}
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                    Staff Workflow
+                  </p>
+
+                  <div className="mt-4 space-y-3">
+                    <div
+                      className={`flex items-center gap-3 ${
+                        request.status === "ASSIGNED"
+                          ? "text-violet-700"
+                          : "text-slate-400"
+                      }`}
+                    >
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-xs font-extrabold">
+                        1
+                      </div>
+
+                      <span className="text-xs font-bold">
+                        Assigned
+                      </span>
+                    </div>
+
+                    <div className="ml-3.5 h-3 w-px bg-slate-200" />
+
+                    <div
+                      className={`flex items-center gap-3 ${
+                        request.status === "IN_PROGRESS"
+                          ? "text-indigo-700"
+                          : "text-slate-400"
+                      }`}
+                    >
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-xs font-extrabold">
+                        2
+                      </div>
+
+                      <span className="text-xs font-bold">
+                        In Progress
+                      </span>
+                    </div>
+
+                    <div className="ml-3.5 h-3 w-px bg-slate-200" />
+
+                    <div
+                      className={`flex items-center gap-3 ${
+                        request.status === "RESOLVED"
+                          ? "text-emerald-700"
+                          : "text-slate-400"
+                      }`}
+                    >
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-xs font-extrabold">
+                        3
+                      </div>
+
+                      <span className="text-xs font-bold">
+                        Resolved
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

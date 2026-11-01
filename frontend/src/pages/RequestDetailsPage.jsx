@@ -6,6 +6,8 @@ import {
   CheckCircle2,
   Clock3,
   MapPin,
+  MessageSquare,
+  RotateCcw,
   UserRound,
 } from "lucide-react";
 import api from "../services/api";
@@ -113,6 +115,33 @@ function RequestDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [reopenComment, setReopenComment] = useState("");
+  const [reopening, setReopening] = useState(false);
+  const [reopenError, setReopenError] = useState("");
+  const [reopenSuccess, setReopenSuccess] = useState("");
+
+  const loadRequestDetails = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const [requestData, historyData] = await Promise.all([
+        api.getRequest(requestId),
+        api.getRequestHistory(requestId),
+      ]);
+
+      setRequest(requestData);
+      setHistory(Array.isArray(historyData) ? historyData : []);
+    } catch (requestError) {
+      setError(
+        requestError?.message ||
+          "Unable to load the requested service request."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -155,6 +184,32 @@ function RequestDetailsPage() {
     };
   }, [requestId]);
 
+  const handleReopen = async () => {
+    try {
+      setReopening(true);
+      setReopenError("");
+      setReopenSuccess("");
+
+      await api.reopenRequest(requestId, {
+        comment: reopenComment.trim() || null,
+      });
+
+      setReopenComment("");
+      setReopenSuccess(
+        "Your request has been reopened successfully."
+      );
+
+      await loadRequestDetails();
+    } catch (requestError) {
+      setReopenError(
+        requestError?.message ||
+          "Unable to reopen the request. Please try again."
+      );
+    } finally {
+      setReopening(false);
+    }
+  };
+
   const timeline = useMemo(() => {
     if (!request) {
       return [];
@@ -167,8 +222,7 @@ function RequestDetailsPage() {
         status: event.status,
         title: statusLabels[event.status] || event.status,
         description:
-          event.comment ||
-          getTimelineDescription(event.status),
+          event.comment || getTimelineDescription(event.status),
         date: dateTime?.date || null,
         time: dateTime?.time || null,
         completed: true,
@@ -239,6 +293,10 @@ function RequestDetailsPage() {
   }
 
   const submittedDate = formatDate(request.createdAt);
+
+  const canReopen =
+    request.status === "RESOLVED" ||
+    request.status === "CLOSED";
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -353,11 +411,16 @@ function RequestDetailsPage() {
               const isLast = index === timeline.length - 1;
 
               return (
-                <div key={`${event.status}-${index}`} className="relative flex gap-5">
+                <div
+                  key={`${event.status}-${index}`}
+                  className="relative flex gap-5"
+                >
                   {!isLast && (
                     <div
                       className={`absolute left-[15px] top-9 h-[calc(100%-12px)] w-0.5 ${
-                        event.completed ? "bg-blue-200" : "bg-slate-200"
+                        event.completed
+                          ? "bg-blue-200"
+                          : "bg-slate-200"
                       }`}
                     />
                   )}
@@ -407,6 +470,89 @@ function RequestDetailsPage() {
           )}
         </div>
       </section>
+
+      {canReopen && (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-6 shadow-sm sm:p-8">
+          <div className="flex items-start gap-4">
+            <div className="rounded-xl bg-white p-3 text-amber-600 shadow-sm">
+              <MessageSquare size={22} />
+            </div>
+
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">
+                Need Further Assistance?
+              </h2>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                If the issue has not been fully resolved or you need further
+                assistance, you can provide feedback and reopen this request
+                for another review.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <label
+              htmlFor="reopen-comment"
+              className="block text-sm font-semibold text-slate-800"
+            >
+              Feedback / Reopen Reason
+              <span className="ml-1 font-normal text-slate-400">
+                (optional)
+              </span>
+            </label>
+
+            <textarea
+              id="reopen-comment"
+              value={reopenComment}
+              onChange={(event) => {
+                setReopenComment(event.target.value);
+                setReopenError("");
+                setReopenSuccess("");
+              }}
+              maxLength={500}
+              rows={4}
+              placeholder="Tell us why you need this request reopened or provide feedback about the resolution..."
+              className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              disabled={reopening}
+            />
+
+            <div className="mt-2 flex justify-between text-xs text-slate-400">
+              <span>Your feedback will be added to the request history.</span>
+              <span>{reopenComment.length}/500</span>
+            </div>
+          </div>
+
+          {reopenError && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              {reopenError}
+            </div>
+          )}
+
+          {reopenSuccess && (
+            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+              {reopenSuccess}
+            </div>
+          )}
+
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={handleReopen}
+              disabled={reopening}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RotateCcw size={17} />
+
+              {reopening ? "Reopening Request..." : "Reopen Request"}
+            </button>
+
+            <p className="text-xs leading-5 text-slate-500">
+              Reopening will send the request back for administrative review.
+            </p>
+          </div>
+        </section>
+      )}
 
       <section className="rounded-2xl border border-slate-200 bg-slate-50 p-6 sm:p-8">
         <h2 className="font-bold text-slate-900">Request Information</h2>

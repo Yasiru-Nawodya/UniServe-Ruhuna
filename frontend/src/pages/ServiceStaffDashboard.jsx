@@ -1,10 +1,13 @@
 import {
   AlertCircle,
+  ArrowUpRight,
   CheckCircle2,
+  ChevronRight,
   Clock3,
   RefreshCw,
   Search,
   Wrench,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -16,15 +19,15 @@ const statusLabels = {
 };
 
 const priorityStyles = {
-  LOW: "bg-slate-100 text-slate-700",
-  MEDIUM: "bg-blue-100 text-blue-700",
-  HIGH: "bg-orange-100 text-orange-700",
-  CRITICAL: "bg-red-100 text-red-700",
+  LOW: "border-slate-200 bg-slate-50 text-slate-600",
+  MEDIUM: "border-blue-200 bg-blue-50 text-blue-700",
+  HIGH: "border-orange-200 bg-orange-50 text-orange-700",
+  CRITICAL: "border-red-200 bg-red-50 text-red-700",
 };
 
 const statusStyles = {
-  ASSIGNED: "bg-amber-100 text-amber-700",
-  IN_PROGRESS: "bg-blue-100 text-blue-700",
+  ASSIGNED: "border-amber-200 bg-amber-50 text-amber-700",
+  IN_PROGRESS: "border-indigo-200 bg-indigo-50 text-indigo-700",
 };
 
 function formatDate(dateValue) {
@@ -32,23 +35,79 @@ function formatDate(dateValue) {
     return "—";
   }
 
-  return new Date(dateValue).toLocaleString();
+  return new Date(dateValue).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
-function StatCard({ icon: Icon, label, value, description }) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  description,
+  iconClassName,
+  accentClassName,
+}) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between">
+    <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+      <div
+        className={`absolute inset-x-0 top-0 h-1 ${accentClassName}`}
+      />
+
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-slate-500">{label}</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
-          <p className="mt-1 text-xs text-slate-500">{description}</p>
+          <p className="text-sm font-medium text-slate-500">
+            {label}
+          </p>
+
+          <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">
+            {value}
+          </p>
+
+          <p className="mt-1 text-xs text-slate-500">
+            {description}
+          </p>
         </div>
 
-        <div className="rounded-xl bg-slate-100 p-3">
-          <Icon className="h-5 w-5 text-slate-700" />
+        <div
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconClassName}`}
+        >
+          <Icon size={21} />
         </div>
       </div>
+    </div>
+  );
+}
+
+function EmptyState({ hasFilters, onClearFilters }) {
+  return (
+    <div className="flex min-h-80 flex-col items-center justify-center px-6 py-12 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+        <Wrench size={26} />
+      </div>
+
+      <h3 className="mt-5 font-bold text-slate-900">
+        No requests found
+      </h3>
+
+      <p className="mt-1 max-w-sm text-sm leading-6 text-slate-500">
+        {hasFilters
+          ? "No assigned requests match your current search and status filter."
+          : "There are currently no active service requests assigned to you."}
+      </p>
+
+      {hasFilters && (
+        <button
+          type="button"
+          onClick={onClearFilters}
+          className="mt-5 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
+        >
+          <X size={16} />
+          Clear filters
+        </button>
+      )}
     </div>
   );
 }
@@ -73,10 +132,11 @@ export default function ServiceStaffDashboard() {
 
       const data = await api.getStaffAssignedRequests();
 
-      setRequests(data || []);
+      setRequests(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(
-        err.message || "Failed to load assigned service requests.",
+        err.message ||
+          "Failed to load assigned service requests.",
       );
     } finally {
       setLoading(false);
@@ -89,15 +149,22 @@ export default function ServiceStaffDashboard() {
 
     const loadInitialRequests = async () => {
       try {
-        const data = await api.getStaffAssignedRequests();
+        setLoading(true);
+        setError("");
+
+        const data =
+          await api.getStaffAssignedRequests();
 
         if (active) {
-          setRequests(data || []);
+          setRequests(
+            Array.isArray(data) ? data : [],
+          );
         }
       } catch (err) {
         if (active) {
           setError(
-            err.message || "Failed to load assigned service requests.",
+            err.message ||
+              "Failed to load assigned service requests.",
           );
         }
       } finally {
@@ -115,7 +182,8 @@ export default function ServiceStaffDashboard() {
   }, []);
 
   const filteredRequests = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
+    const normalizedSearch =
+      search.trim().toLowerCase();
 
     return requests.filter((request) => {
       const matchesStatus =
@@ -158,46 +226,64 @@ export default function ServiceStaffDashboard() {
     (request) => request.priority === "CRITICAL",
   ).length;
 
+  const hasFilters =
+    search.trim() !== "" ||
+    statusFilter !== "ALL";
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("ALL");
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-blue-600">
-              <Wrench className="h-4 w-4" />
-              Service Staff Workspace
+      <div className="mx-auto max-w-7xl px-5 py-7 sm:px-6 lg:px-8 lg:py-9">
+        <div className="mb-8">
+          <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+            <div>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-violet-100 bg-violet-50 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-violet-700">
+                <Wrench size={14} />
+                Service Staff Workspace
+              </div>
+
+              <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">
+                Assigned Requests
+              </h1>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                Focus on the service requests assigned to
+                you, track active work, and resolve issues
+                efficiently.
+              </p>
             </div>
 
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-              Assigned Requests
-            </h1>
-
-            <p className="mt-2 text-sm text-slate-500">
-              View and manage service requests assigned to you.
-            </p>
+            <button
+              type="button"
+              onClick={() => loadRequests(true)}
+              disabled={refreshing}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw
+                size={17}
+                className={
+                  refreshing
+                    ? "animate-spin"
+                    : ""
+                }
+              />
+              Refresh
+            </button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => loadRequests(true)}
-            disabled={refreshing}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${
-                refreshing ? "animate-spin" : ""
-              }`}
-            />
-            Refresh
-          </button>
         </div>
 
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             icon={Wrench}
             label="Total Assigned"
             value={totalAssigned}
             description="Active requests assigned to you"
+            iconClassName="bg-violet-50 text-violet-700"
+            accentClassName="bg-violet-500"
           />
 
           <StatCard
@@ -205,6 +291,8 @@ export default function ServiceStaffDashboard() {
             label="Awaiting Work"
             value={awaitingWork}
             description="Requests waiting to be started"
+            iconClassName="bg-amber-50 text-amber-700"
+            accentClassName="bg-amber-400"
           />
 
           <StatCard
@@ -212,263 +300,402 @@ export default function ServiceStaffDashboard() {
             label="In Progress"
             value={inProgress}
             description="Requests currently being handled"
+            iconClassName="bg-indigo-50 text-indigo-700"
+            accentClassName="bg-indigo-500"
           />
 
           <StatCard
             icon={AlertCircle}
             label="Critical"
             value={criticalRequests}
-            description="High-priority attention required"
+            description="Requests requiring urgent attention"
+            iconClassName="bg-red-50 text-red-700"
+            accentClassName="bg-red-500"
           />
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 p-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="relative w-full lg:max-w-md">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 p-5 sm:p-6">
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+              <div>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-lg font-extrabold text-slate-950">
+                    My Active Requests
+                  </h2>
 
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search requests..."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
-                />
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                    {filteredRequests.length}
+                  </span>
+                </div>
+
+                <p className="mt-1.5 text-sm text-slate-500">
+                  Requests currently assigned to your
+                  service staff account.
+                </p>
               </div>
 
-              <div className="flex gap-2">
-                {["ALL", "ASSIGNED", "IN_PROGRESS"].map((status) => (
-                  <button
-                    key={status}
-                    type="button"
-                    onClick={() => setStatusFilter(status)}
-                    className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
-                      statusFilter === status
-                        ? "bg-slate-900 text-white"
-                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                    }`}
-                  >
-                    {status === "ALL"
-                      ? "All"
-                      : statusLabels[status]}
-                  </button>
-                ))}
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="relative">
+                  <Search
+                    size={17}
+                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(event) =>
+                      setSearch(event.target.value)
+                    }
+                    placeholder="Search requests..."
+                    aria-label="Search assigned requests"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-10 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10 sm:w-72"
+                  />
+
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => setSearch("")}
+                      aria-label="Clear search"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                    >
+                      <X size={15} />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+                  {[
+                    "ALL",
+                    "ASSIGNED",
+                    "IN_PROGRESS",
+                  ].map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() =>
+                        setStatusFilter(status)
+                      }
+                      className={`rounded-lg px-3 py-2 text-xs font-bold transition ${
+                        statusFilter === status
+                          ? "bg-slate-900 text-white shadow-sm"
+                          : "text-slate-500 hover:bg-white hover:text-slate-700"
+                      }`}
+                    >
+                      {status === "ALL"
+                        ? "All"
+                        : statusLabels[status]}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
+
+            {hasFilters && (
+              <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-violet-100 bg-violet-50/60 px-4 py-3">
+                <p className="text-xs font-medium text-violet-700">
+                  Showing {filteredRequests.length} matching{" "}
+                  {filteredRequests.length === 1
+                    ? "request"
+                    : "requests"}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-violet-700 transition hover:text-violet-900"
+                >
+                  <X size={14} />
+                  Clear
+                </button>
+              </div>
+            )}
           </div>
 
-          {error && (
-            <div className="m-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          {!loading && error && (
+            <div className="m-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              <AlertCircle
+                size={20}
+                className="mt-0.5 shrink-0"
+              />
 
               <div>
-                <p className="font-semibold">Unable to load requests</p>
-                <p className="mt-1">{error}</p>
+                <p className="font-bold">
+                  Unable to load requests
+                </p>
+
+                <p className="mt-1 leading-6">
+                  {error}
+                </p>
               </div>
             </div>
           )}
 
           {loading ? (
-            <div className="flex min-h-64 items-center justify-center p-8">
-              <div className="flex items-center gap-3 text-sm text-slate-500">
-                <RefreshCw className="h-5 w-5 animate-spin" />
-                Loading assigned requests...
+            <div className="flex min-h-80 items-center justify-center">
+              <div className="flex flex-col items-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-700">
+                  <RefreshCw
+                    size={21}
+                    className="animate-spin"
+                  />
+                </div>
+
+                <p className="mt-4 text-sm font-semibold text-slate-700">
+                  Loading assigned requests...
+                </p>
+
+                <p className="mt-1 text-xs text-slate-400">
+                  Fetching your latest workload
+                </p>
               </div>
             </div>
           ) : filteredRequests.length === 0 ? (
-            <div className="flex min-h-64 flex-col items-center justify-center px-6 py-12 text-center">
-              <div className="rounded-full bg-slate-100 p-4">
-                <Wrench className="h-7 w-7 text-slate-400" />
-              </div>
-
-              <h3 className="mt-4 text-base font-semibold text-slate-900">
-                No requests found
-              </h3>
-
-              <p className="mt-1 max-w-md text-sm text-slate-500">
-                {requests.length === 0
-                  ? "There are currently no active service requests assigned to you."
-                  : "Try changing your search or status filter."}
-              </p>
-            </div>
+            <EmptyState
+              hasFilters={hasFilters}
+              onClearFilters={clearFilters}
+            />
           ) : (
             <>
               <div className="hidden overflow-x-auto lg:block">
                 <table className="w-full text-left">
-                  <thead className="border-b border-slate-200 bg-slate-50">
-                    <tr>
-                      <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50/80">
+                      <th className="px-6 py-4 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                         Request
                       </th>
 
-                      <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <th className="px-5 py-4 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                         Category
                       </th>
 
-                      <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <th className="px-5 py-4 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                         Priority
                       </th>
 
-                      <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <th className="px-5 py-4 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                         Status
                       </th>
 
-                      <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <th className="px-5 py-4 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                         Submitted
                       </th>
 
-                      <th className="px-5 py-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <th className="px-6 py-4 text-right text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                         Action
                       </th>
                     </tr>
                   </thead>
 
                   <tbody className="divide-y divide-slate-100">
-                    {filteredRequests.map((request) => (
-                      <tr
-                        key={request.id}
-                        className="transition hover:bg-slate-50"
-                      >
-                        <td className="px-5 py-4">
-                          <p className="text-xs font-semibold text-blue-600">
-                            {request.requestNumber}
-                          </p>
+                    {filteredRequests.map(
+                      (request) => (
+                        <tr
+                          key={request.id}
+                          className="group transition hover:bg-slate-50/80"
+                        >
+                          <td className="px-6 py-5">
+                            <div className="flex items-start gap-3">
+                              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xs font-extrabold text-slate-600 transition group-hover:bg-violet-50 group-hover:text-violet-700">
+                                {request.requestNumber
+                                  ?.replace(
+                                    "USR-",
+                                    "",
+                                  )
+                                  .slice(-2) ||
+                                  "—"}
+                              </div>
 
-                          <p className="mt-1 font-semibold text-slate-900">
-                            {request.title}
-                          </p>
+                              <div className="min-w-0">
+                                <p className="font-extrabold text-slate-900">
+                                  {
+                                    request.requestNumber
+                                  }
+                                </p>
 
-                          <p className="mt-1 max-w-xs truncate text-xs text-slate-500">
-                            {request.location || "No location"}
-                          </p>
-                        </td>
+                                <p className="mt-1 max-w-xs truncate text-sm font-semibold text-slate-700">
+                                  {request.title}
+                                </p>
 
-                        <td className="px-5 py-4 text-sm text-slate-600">
-                          {request.categoryName || "—"}
-                        </td>
+                                <p className="mt-1 max-w-xs truncate text-xs text-slate-400">
+                                  {request.location ||
+                                    "No location"}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
 
-                        <td className="px-5 py-4">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                              priorityStyles[request.priority] ||
-                              "bg-slate-100 text-slate-700"
-                            }`}
-                          >
-                            {request.priority || "—"}
-                          </span>
-                        </td>
+                          <td className="px-5 py-5">
+                            <p className="text-sm font-semibold text-slate-700">
+                              {request.categoryName ||
+                                "—"}
+                            </p>
+                          </td>
 
-                        <td className="px-5 py-4">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                              statusStyles[request.status] ||
-                              "bg-slate-100 text-slate-700"
-                            }`}
-                          >
-                            {statusLabels[request.status] ||
-                              request.status}
-                          </span>
-                        </td>
+                          <td className="px-5 py-5">
+                            <span
+                              className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-extrabold ${
+                                priorityStyles[
+                                  request.priority
+                                ] ||
+                                "border-slate-200 bg-slate-50 text-slate-600"
+                              }`}
+                            >
+                              {request.priority ||
+                                "—"}
+                            </span>
+                          </td>
 
-                        <td className="px-5 py-4 text-sm text-slate-500">
-                          {formatDate(request.createdAt)}
-                        </td>
+                          <td className="px-5 py-5">
+                            <span
+                              className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-extrabold ${
+                                statusStyles[
+                                  request.status
+                                ] ||
+                                "border-slate-200 bg-slate-50 text-slate-600"
+                              }`}
+                            >
+                              <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-current opacity-70" />
 
-                        <td className="px-5 py-4 text-right">
-                          <Link
-                            to={`/staff/requests/${request.id}`}
-                            className="inline-flex items-center rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-700"
-                          >
-                            Manage
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
+                              {statusLabels[
+                                request.status
+                              ] ||
+                                request.status}
+                            </span>
+                          </td>
+
+                          <td className="px-5 py-5 text-sm font-medium text-slate-500">
+                            {formatDate(
+                              request.createdAt,
+                            )}
+                          </td>
+
+                          <td className="px-6 py-5 text-right">
+                            <Link
+                              to={`/service-staff/requests/${request.id}`}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-violet-700"
+                            >
+                              Manage
+                              <ArrowUpRight
+                                size={14}
+                              />
+                            </Link>
+                          </td>
+                        </tr>
+                      ),
+                    )}
                   </tbody>
                 </table>
               </div>
 
               <div className="divide-y divide-slate-100 lg:hidden">
-                {filteredRequests.map((request) => (
-                  <div key={request.id} className="p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-semibold text-blue-600">
-                          {request.requestNumber}
-                        </p>
+                {filteredRequests.map(
+                  (request) => (
+                    <div
+                      key={request.id}
+                      className="p-5"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs font-extrabold tracking-wide text-violet-600">
+                            {
+                              request.requestNumber
+                            }
+                          </p>
 
-                        <h3 className="mt-1 font-semibold text-slate-900">
-                          {request.title}
-                        </h3>
-                      </div>
+                          <h3 className="mt-1.5 font-extrabold leading-5 text-slate-900">
+                            {request.title}
+                          </h3>
 
-                      <span
-                        className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          priorityStyles[request.priority] ||
-                          "bg-slate-100 text-slate-700"
-                        }`}
-                      >
-                        {request.priority || "—"}
-                      </span>
-                    </div>
+                          <p className="mt-1.5 text-xs text-slate-400">
+                            {request.location ||
+                              "No location"}
+                          </p>
+                        </div>
 
-                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <p className="text-xs text-slate-400">
-                          Category
-                        </p>
-                        <p className="mt-1 text-slate-700">
-                          {request.categoryName || "—"}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-slate-400">
-                          Status
-                        </p>
                         <span
-                          className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            statusStyles[request.status] ||
-                            "bg-slate-100 text-slate-700"
+                          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${
+                            priorityStyles[
+                              request.priority
+                            ] ||
+                            "border-slate-200 bg-slate-50 text-slate-600"
                           }`}
                         >
-                          {statusLabels[request.status] ||
-                            request.status}
+                          {request.priority ||
+                            "—"}
                         </span>
                       </div>
 
-                      <div>
-                        <p className="text-xs text-slate-400">
-                          Location
-                        </p>
-                        <p className="mt-1 text-slate-700">
-                          {request.location || "—"}
-                        </p>
+                      <div className="mt-5 grid grid-cols-2 gap-x-5 gap-y-4 rounded-xl bg-slate-50 p-4">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Category
+                          </p>
+
+                          <p className="mt-1 text-sm font-semibold text-slate-700">
+                            {request.categoryName ||
+                              "—"}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Status
+                          </p>
+
+                          <span
+                            className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-extrabold ${
+                              statusStyles[
+                                request.status
+                              ] ||
+                              "border-slate-200 bg-white text-slate-600"
+                            }`}
+                          >
+                            {statusLabels[
+                              request.status
+                            ] ||
+                              request.status}
+                          </span>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Submitted
+                          </p>
+
+                          <p className="mt-1 text-sm font-semibold text-slate-700">
+                            {formatDate(
+                              request.createdAt,
+                            )}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Priority
+                          </p>
+
+                          <p className="mt-1 text-sm font-semibold text-slate-700">
+                            {request.priority ||
+                              "—"}
+                          </p>
+                        </div>
                       </div>
 
-                      <div>
-                        <p className="text-xs text-slate-400">
-                          Submitted
-                        </p>
-                        <p className="mt-1 text-slate-700">
-                          {formatDate(request.createdAt)}
-                        </p>
-                      </div>
+                      <Link
+                        to={`/service-staff/requests/${request.id}`}
+                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white transition hover:bg-violet-700"
+                      >
+                        Manage Request
+                        <ChevronRight size={16} />
+                      </Link>
                     </div>
-
-                    <Link
-                      to={`/staff/requests/${request.id}`}
-                      className="mt-5 flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700"
-                    >
-                      Manage Request
-                    </Link>
-                  </div>
-                ))}
+                  ),
+                )}
               </div>
             </>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );

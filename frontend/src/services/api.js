@@ -57,6 +57,12 @@ export const api = {
   getRequestHistory: (id) =>
     request(`/requests/${id}/history`),
 
+  reopenRequest: (id, data) =>
+  request(`/requests/${id}/reopen`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+
   createRequest: (data) =>
     request("/requests", {
       method: "POST",

@@ -227,9 +227,9 @@ function AdminRequestDetailsPage() {
   };
 
   const handleAssign = async () => {
-    if (!departmentId) {
+    if (!departmentId || !assignedToId) {
       setError(
-        "Please select a department before assigning the request.",
+        "Please select both a department and a service staff member before assigning the request.",
       );
       return;
     }
@@ -243,9 +243,7 @@ function AdminRequestDetailsPage() {
         requestId,
         {
           departmentId: Number(departmentId),
-          assignedToId: assignedToId
-            ? Number(assignedToId)
-            : null,
+          assignedToId: Number(assignedToId),
         },
       );
 
@@ -803,7 +801,8 @@ function AdminRequestDetailsPage() {
                     onClick={handleAssign}
                     disabled={
                       assigning ||
-                      !departmentId
+                      !departmentId ||
+                      !assignedToId
                     }
                     className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60"
                   >
@@ -941,5 +940,4 @@ function AdminRequestDetailsPage() {
     </div>
   );
 }
-
 export default AdminRequestDetailsPage;
